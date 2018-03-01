@@ -1,0 +1,244 @@
+#include<SoftwareSerial.h>
+#include <Keypad.h>
+#include <LiquidCrystal.h>
+
+SoftwareSerial mySerial(9,10);//TX RX
+LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+
+const byte ROWS = 4; //four rows
+const byte COLS = 4; //four columns
+// Define the Keymap
+char hexaKeys[ROWS][COLS] = {
+  {'1','2','3','A'},
+  {'4','5','6','B'},
+  {'7','8','9','C'},
+  {'*','0','#','D'}
+};
+byte rowPins[ROWS] = {9, 8, 7, 6}; //connect to the Rows of the keypad pin 8, 7, 6, 5 respectively
+byte colPins[COLS] = {5, 4, 3, 2}; //connect to the Columns of the keypad pin 4, 3, 2, 1 respectively
+
+//initialize an instance of class NewKeypad
+Keypad customKeypad = Keypad( makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS); 
+
+ // TX, RX
+
+#include <math.h>
+//**************************************************************gps*************************************************************
+
+
+
+//****************************************************************mems**********************************************************
+
+const int x_out = A0; / connect x_out of module to A1 of UNO board /
+const int y_out = A1; / connect y_out of module to A2 of UNO board /
+const int z_out = A2; / connect z_out of module to A3 of UNO board /
+
+void setup()
+{
+Serial.begin(9600);
+mySerial.begin(9600);
+
+  
+    lcd.begin(16, 2);
+
+
+      
+
+pinMode(A0,INPUT);
+pinMode(A1,INPUT);
+pinMode(A2,INPUT);
+}
+
+void loop() 
+{
+  
+  int x_adc_value, y_adc_value, z_adc_value; 
+  double x_g_value, y_g_value, z_g_value;
+  double roll, yaw;
+  int pitch;
+  x_adc_value = analogRead(x_out); / Digital value of voltage on x_out pin / 
+  y_adc_value = analogRead(y_out); / Digital value of voltage on y_out pin / 
+  z_adc_value = analogRead(z_out); / Digital value of voltage on z_out pin / 
+  Serial.print("x = ");
+  Serial.print(x_adc_value);
+  Serial.print("\t\t");
+  Serial.print("y = ");
+  Serial.print(y_adc_value);
+  Serial.print("\t\t");
+  Serial.print("z = ");
+  Serial.print(z_adc_value);
+  Serial.print("\t\t");
+  //delay(100);
+  
+  x_g_value = ( ( ( (double)(x_adc_value  5)/1024) - 1.65 ) / 0.330 ); / Acceleration in x-direction in g units */ 
+  y_g_value = ( ( ( (double)(y_adc_value  5)/1024) - 1.65 ) / 0.330 ); / Acceleration in y-direction in g units */ 
+  z_g_value = ( ( ( (double)(z_adc_value  5)/1024) - 1.80 ) / 0.330 ); / Acceleration in z-direction in g units */ 
+
+  roll = ( ( (atan2(y_g_value,z_g_value)  180) / 3.14 ) + 180 ); / Formula for roll */
+  pitch = ( ( (atan2(z_g_value,x_g_value)  180) / 3.14 ) + 180 ); / Formula for pitch */
+  //yaw = ( ( (atan2(x_g_value,y_g_value)  180) / 3.14 ) + 180 ); / Formula for yaw */
+  / Not possible to measure yaw using accelerometer. Gyroscope must be used if yaw is also required /
+
+  Serial.print("Roll = ");
+  Serial.print(roll);
+  Serial.print("\t");
+  Serial.print("Pitch = ");
+  Serial.print(pitch);
+  Serial.print("\n\n");
+
+ lcd.setCursor(0,0);
+lcd.print("Patient safe");
+
+
+ lcd.setCursor(1,1);
+lcd.print("                        ");
+
+  delay(700);
+
+
+  
+  if(pitch >= 40 && pitch <= 99)
+{
+  
+  lcd.setCursor(0,0);
+lcd.print("EMERGENCY        ");
+
+
+ lcd.setCursor(1,1);
+lcd.print("                        ");
+
+
+  delay(1000);
+  lcd.setCursor(0,0);
+  lcd.print("                    ");
+  lcd.setCursor(1,1);
+lcd.print("                      ");
+Serial.print("Sending msg");
+ SendTextMessage1a();
+ delay(3000);
+ SendTextMessage2a();
+ delay(3000);
+ Serial.print("Sending msg");
+ 
+ 
+ lcd.setCursor(0,0);
+lcd.print("sms sending...........");
+
+ lcd.setCursor(0,1);
+lcd.print("                        ");
+
+
+ lcd.setCursor(0,0);
+lcd.print("                          ");
+delay(700);
+
+
+}
+  if(pitch >= 100 && pitch <= 199 )
+{
+ 
+  
+  lcd.setCursor(0,0);
+  lcd.print("                    ");
+  lcd.setCursor(1,1);
+lcd.print("                      ");
+Serial.print("Sending msg");
+ SendTextMessage1b();
+ delay(3000);
+ SendTextMessage2b();
+ delay(3000);
+ Serial.print("Sending msg");
+ 
+ 
+ lcd.setCursor(0,0);
+lcd.print("sms sending...........");
+
+ lcd.setCursor(0,1);
+lcd.print("                        ");
+
+
+ lcd.setCursor(0,0);
+lcd.print("                          ");
+delay(700);
+
+
+}
+  if(pitch >= 200  )
+{
+ 
+  lcd.setCursor(0,0);
+  lcd.print("                    ");
+  lcd.setCursor(1,1);
+lcd.print("                      ");
+Serial.print("Sending msg");
+ SendTextMessage1c();
+ delay(3000);
+ SendTextMessage2c();
+ delay(3000);
+ Serial.print("Sending msg");
+ 
+ 
+ lcd.setCursor(0,0);
+lcd.print("sms sending...........");
+
+ lcd.setCursor(0,1);
+lcd.print("                        ");
+
+
+ lcd.setCursor(0,0);
+lcd.print("                          ");
+delay(700);
+
+
+}
+ 
+}
+
+
+
+
+void SendTextMessage1a()
+{
+  mySerial.println("AT+CMGF=1");    //To send SMS in Text Mode
+  delay(1000);
+  mySerial.println("AT+CMGS=\"+91xxxxxxxx\"\r"); // change to the phone number you using
+  delay(200);
+  mySerial.print("EMERGENCY HELP NEEDED");
+
+
+
+  delay(200);
+  mySerial.println((char)26);//the stopping character
+  
+}
+ void SendTextMessage2a()
+{
+  mySerial.println("AT+CMGF=1");    //To send SMS in Text Mode
+  delay(1000);
+  mySerial.println("AT+CMGS=\"+91xxxxxxxxxxx\"\r"); // change to the phone number you using
+  delay(200);
+  mySerial.print("EMERGENCY HELP NEEDED");
+
+
+
+  delay(200);
+  mySerial.println((char)26);//the stopping character 
+  
+} 
+
+ void SendTextMessage2c()
+{
+  mySerial.println("AT+CMGF=1");    //To send SMS in Text Mode
+  delay(1000);
+  mySerial.println("AT+CMGS=\"+91xxxxxxxxxxx\"\r"); // change to the phone number you using
+  delay(200);
+  mySerial.print("FOOD IS NEEDED");
+
+
+
+  delay(200);
+  mySerial.println((char)26);//the stopping character 
+  
+} 
+code.txt
+Displaying code.txt.
